@@ -1,0 +1,10 @@
+features: 250
+labels:
+	I-MISC: 2
+	B-LOC: 5
+	I-PER: 3
+	I-LOC: 4
+	B-MISC: 6
+	I-ORG: 1
+	B-ORG: 7
+	O: 0
