@@ -16,19 +16,18 @@ Now transform the conll dataset into a sequence vector representation using the 
 
 You can add -h as an argument for some more options with regards to I/O and context sizes.
 
-Then on top of that file, you can run the keras model training, which does a five fold CV:
+Then on top of that file, you can run the keras model training, which does a n-fold CV:
 
 > python3 train.py
 
-It takes roughly 6s per epoch with batch size of 512 samples with 970GTX GPU and tensorflow backend. 
+It takes roughly 8s per epoch with batch size of 512 samples with 970GTX GPU and tensorflow backend. 
 
 The model
 ---------
 
 The model is an LSTM over a convolutional layer which itself trains over a sequence of seven glove embedding vectors (three previous words, word for the current label, three following words). The last layer is a softmax over all output classes.
 
-CV categorical accuracy is about 97.51%, class weighted F1 score is also about 97.49%.
-
+CV categorical accuracy and weighted F1 is about 98.2%.
 To assess the test set performance we are ensembling the model outputs from each CV fold and average over the predictions.
 
 Test set performance
@@ -47,13 +46,13 @@ For test set A we get:
 ``` 
 labels: {0: O, 1: I-ORG, 2: I-MISC, 3: I-PER, 4: I-LOC, 5: B-LOC, 6: B-MISC, 7: B-ORG}
 Confusion matrix:
-[[42706   105    67    59    37     0]
- [  338  1637    29    29    59     0]
- [  265    34   924    17    24     0]
- [   93     7     8  3027    14     0]
- [   92    51    21    17  1913     0]
- [    1     0     3     0     0     0]]
-F1 Score  0.972595415174
+[[42755    99    38    49    33     0]
+ [  302  1684    22    33    51     0]
+ [  247    30   948    15    23     1]
+ [   71     4     6  3056    12     0]
+ [   85    45    14    18  1932     0]
+ [    0     0     4     0     0     0]]
+F1 Score  0.97597281064
 ```
 
 and for test set B we get:
@@ -61,15 +60,15 @@ and for test set B we get:
 ``` 
 labels: {0: O, 1: I-ORG, 2: I-MISC, 3: I-PER, 4: I-LOC, 5: B-LOC, 6: B-MISC, 7: B-ORG}
 Confusion matrix:
-[[38131   190   117    52    63     0     0     0]
- [  323  1960    53    36   119     0     0     0]
- [  196    39   640    15    19     0     0     0]
- [  115    29     0  2610    19     0     0     0]
- [   80    95    32    15  1697     0     0     0]
- [    1     0     0     2     3     0     0     0]
+[[38175   167    98    48    65     0     0     0]
+ [  304  1987    46    33   121     0     0     0]
+ [  194    38   642    18    17     0     0     0]
+ [   89    26     0  2639    19     0     0     0]
+ [   72    78    25    16  1728     0     0     0]
+ [    1     1     0     2     2     0     0     0]
  [    3     0     5     0     1     0     0     0]
  [    1     4     0     0     0     0     0     0]]
-F1 Score  0.964421474565
+F1 Score  0.967240147344
 ```
 
 

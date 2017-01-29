@@ -16,13 +16,13 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.metrics import f1_score, confusion_matrix
 
 # training
-nfolds = 5
-nb_epoch = 50
+nfolds = 10
+nb_epoch = 100
 batch_size = 512
 nlabels = 8
 
 # conv
-nb_filter = 120
+nb_filter = 512
 filter_length = 5
 
 # LSTM
@@ -48,10 +48,11 @@ def nn_model():
                         input_shape=(lstm_timesteps, lstm_input_dim)))
    model.add(PReLU())
    model.add(BatchNormalization())
-   model.add(Dropout(0.3))
+   # we tend to overfit very much here because of the big convolution, thus slightly more dropout   
+   model.add(Dropout(0.6))
 
    model.add(Bidirectional(LSTM(lstm_units, activation='tanh', inner_activation='sigmoid', return_sequences=False)))
-   model.add(Dropout(0.3))
+   model.add(Dropout(0.5))
    
    model.add(Dense(nlabels, activation='softmax', init = 'he_normal'))
    
@@ -82,8 +83,8 @@ for (inTrain, inTest) in folds:
    print('Fold ', currentFold, ' starting...')
    model = nn_model()
    callbacks = [
-      EarlyStopping(monitor='val_loss', patience = 3, verbose = 0),
-      ModelCheckpoint(filepath=('models/model_fold_{}.hdf5'.format(currentFold)), verbose=0, save_best_only = True)
+      EarlyStopping(monitor='val_categorical_accuracy', patience = 6, verbose = 0),
+      ModelCheckpoint(monitor='val_categorical_accuracy', filepath=('models/model_fold_{}.hdf5'.format(currentFold)), verbose=0, save_best_only = True)
    ]
       
    model.fit(xtr, ytr, batch_size=batch_size, nb_epoch=nb_epoch,
