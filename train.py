@@ -1,5 +1,7 @@
 #!/bin/python3
 
+import yaml
+
 import numpy as np
 import pandas as pd
 
@@ -11,36 +13,47 @@ from keras.layers import Dense, Dropout, LSTM, Bidirectional, Convolution1D, Max
 from keras.layers.advanced_activations import PReLU
 from keras.layers.normalization import BatchNormalization
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, confusion_matrix
 
-# Training
+# training
 nfolds = 5
 nb_epoch = 50
-batch_size = 128
+batch_size = 512
+nlabels = 8
 
 # conv
-nb_filter = 64
+nb_filter = 120
 filter_length = 5
-pool_length = 4
 
 # LSTM
 lstm_timesteps = 5
 lstm_input_dim = 50
-lstm_output_size = 70
+lstm_units = 150
+
+cfg = yaml.load(open("data/meta.yaml", "r"))
+if cfg['context']:
+   lstm_timesteps = cfg['context']
+if cfg['embedding_dim']:
+   lstm_input_dim = cfg['embedding_dim']
+if cfg['nlabels']:
+   nlabels = cfg['nlabels']
+
+print('lstm timesteps: {}, lstm input dim: {}, num output labels: {}'.format(lstm_timesteps, lstm_input_dim, nlabels))
 
 def nn_model():
    model = Sequential()
    model.add(Convolution1D(nb_filter=nb_filter,
                         filter_length=filter_length,
-                        border_mode='valid',
-                        activation='relu',               
+                        border_mode='valid',                        
                         input_shape=(lstm_timesteps, lstm_input_dim)))
+   model.add(PReLU())
+   model.add(BatchNormalization())
    model.add(Dropout(0.3))
 
-   model.add(Bidirectional(LSTM(lstm_output_size, activation='tanh', inner_activation='hard_sigmoid', return_sequences=False)))
-   model.add(Dropout(0.5))
+   model.add(Bidirectional(LSTM(lstm_units, activation='tanh', inner_activation='sigmoid', return_sequences=False)))
+   model.add(Dropout(0.3))
    
-   model.add(Dense(8, activation='softmax', init = 'he_normal'))
+   model.add(Dense(nlabels, activation='softmax', init = 'he_normal'))
    
    model.compile(loss = 'categorical_crossentropy', optimizer = 'adadelta', metrics=['categorical_accuracy'])
    return(model)
@@ -48,12 +61,12 @@ def nn_model():
 df = pd.read_csv('data/vectorized.txt', sep = ' ', header = 0)
 X = df.iloc[:,1:].values
 
-print('X shape:', X.shape)
-# reshape into a 5x50x1 tensor to fit it into the conv/lstm
+print('X shape: ', X.shape)
+# reshape again into temporal structure
 X = X.reshape(X.shape[0], -1, lstm_input_dim).astype('float32')
 y = to_categorical(df.iloc[:,0])
 
-print('X shape:', X.shape)
+print('X temporal reshape: ', X.shape)
 print('#samples: ', len(X))
 print('#labels: ', len(y))
 
@@ -70,7 +83,7 @@ for (inTrain, inTest) in folds:
    model = nn_model()
    callbacks = [
       EarlyStopping(monitor='val_loss', patience = 3, verbose = 0),
-      ModelCheckpoint(filepath=('models/{}_{}.hdf5'.format('model_weights', currentFold)), verbose=1, save_best_only = True)
+      ModelCheckpoint(filepath=('models/model_fold_{}.hdf5'.format(currentFold)), verbose=0, save_best_only = True)
    ]
       
    model.fit(xtr, ytr, batch_size=batch_size, nb_epoch=nb_epoch,
@@ -82,8 +95,11 @@ for (inTrain, inTest) in folds:
    yte_max = yte.argmax(axis=1)
             
    score = f1_score(yte_max, ypred_max, average = 'weighted')   
-   print('Fold ', currentFold, '- F1: ', score)
    foldScores.append(score)
+   print("Confusion matrix:\n%s" % confusion_matrix(yte_max, ypred_max))
+   print('Fold ', currentFold, '- F1: ', score)   
+   print('avg f1 fold scores so far: ', np.mean(foldScores))
    currentFold += 1
 
-print('avg fold scores: ', np.mean(foldScores))
+print('f1 fold scores: ', foldScores)
+print('final avg f1 fold scores: ', np.mean(foldScores))

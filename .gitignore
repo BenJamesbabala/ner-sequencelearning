@@ -2,6 +2,9 @@
 
 data/glove.6B.50d.txt
 data/vectorized.txt
+data/vectorized.bin
+
+data_test*
 
 # Package Files #
 #*.jar

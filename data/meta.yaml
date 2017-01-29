@@ -1,10 +1,5 @@
-features: 250
-labels:
-	I-MISC: 2
-	B-LOC: 5
-	I-PER: 3
-	I-LOC: 4
-	B-MISC: 6
-	I-ORG: 1
-	B-ORG: 7
-	O: 0
+nlabels: 8
+feature_dim: 350
+embedding_dim: 50
+context: 7
+labels: {0: O, 1: I-ORG, 2: I-MISC, 3: I-PER, 4: I-LOC, 5: B-LOC, 6: B-MISC, 7: B-ORG}
